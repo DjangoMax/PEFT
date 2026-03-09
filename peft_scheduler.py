@@ -199,7 +199,7 @@ class PEFT:
 
     def visualize_dag(self):
         """
-        使用 NetworkX 和 Matplotlib 绘制任务依赖图 (DAG)
+        使用 NetworkX 和 Matplotlib 绘制分层结构的依赖图 (DAG)
         """
         try:
             import networkx as nx
@@ -214,18 +214,34 @@ class PEFT:
             for succ_id, cost in task.successors.items():
                 G.add_edge(t_id, succ_id, weight=cost)
         
-        pos = nx.spring_layout(G)
-        plt.figure(figsize=(8, 6))
+        # 计算图的分层深度，用于层次化布局
+        for node in nx.topological_sort(G):
+            layer = 0
+            for pred in G.predecessors(node):
+                layer = max(layer, G.nodes[pred].get('layer', 0) + 1)
+            G.nodes[node]['layer'] = layer
+            
+        # 使用 multipartite_layout 进行分层布局 (按 layer 对齐)
+        pos = nx.multipartite_layout(G, subset_key='layer')
         
-        # 节点颜色基于优先级 rank_oct
+        # 默认 multipartite 是从左到右水平拉长的，我们通过翻转坐标轴把它变成从上到下的树状图
+        pos_top_down = {node: (coords[1], -coords[0]) for node, coords in pos.items()}
+        
+        plt.figure(figsize=(10, 8))
+        
+        # 节点颜色基于优先级 rank_oct (颜色深=优先级高)
         ranks = [self.tasks[node].rank_oct for node in G.nodes()]
         
-        nx.draw(G, pos, with_labels=True, node_color=ranks, cmap=plt.cm.Blues, 
-                node_size=2000, font_size=12, font_weight='bold', arrows=True)
+        # 绘制节点和边
+        nx.draw(G, pos_top_down, with_labels=True, node_color=ranks, cmap=plt.cm.Blues, 
+                node_size=2500, font_size=12, font_weight='bold', arrows=True,
+                arrowsize=20, edgecolors='black')
         
+        # 绘制权重标签，移位避免重叠
         edge_labels = nx.get_edge_attributes(G, 'weight')
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-        plt.title("DAG Dependency Visualization")
+        nx.draw_networkx_edge_labels(G, pos_top_down, edge_labels=edge_labels, label_pos=0.3, font_size=10)
+        
+        plt.title("DAG Dependency Visualization (Hierarchical Layout)")
         plt.show()
 
     def visualize_gantt_chart(self, tasks_schedule, final_makespan):
