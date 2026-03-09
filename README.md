@@ -20,6 +20,7 @@ This repository contains a Python implementation of the **Predictive Earliest Fi
     2. **Forward Simulation (Processor Selection)**: Schedules tasks sequentially by predicting the best processor node offering the minimal Optimistic Expected Finish Time (O_EFT).
 * **Network Cost Reduction**: Smartly eliminates transmission costs if dependent tasks are scheduled on the same computing node.
 * **Extensibility**: Easy to plug in your custom JSON DAG descriptions.
+* **Visualization Feature**: Generates visual representations of the task dependency DAG and executing Gantt charts using NetworkX and Matplotlib.
 
 ### Quick Start
 To run the included sample calculation:
@@ -30,6 +31,9 @@ git clone https://github.com/DjangoMax/PEFT.git
 
 # Enter the directory
 cd PEFT
+
+# Install requirements for Visualization
+pip install -r requirements.txt
 
 # Run the algorithm script
 python peft_scheduler.py
@@ -48,6 +52,7 @@ python peft_scheduler.py
     2. **前向模拟分配（处理器选择）**：按优先级依次处理任务，通过预判综合预期完成时间最优解 (O_EFT)，为每个任务分配最佳计算节点。
 * **网络通讯开销消减**：如果在当前分配计划中，存在依赖关系的上下游任务被分配到了同一计算节点上，实际的跨节点传输开销将被自动免除。
 * **高扩展性**：支持以 JSON 格式快速加载自定义的任务依赖和开销数据。
+* **调度可视化输出**：集成了任务依赖 DAG 图以及分配结果的甘特图 (Gantt Chart) 自动绘制功能。
 
 ### 快速开始
 运行项目自带的 DAG 样例：
@@ -58,6 +63,9 @@ git clone https://github.com/DjangoMax/PEFT.git
 
 # 进入项目目录
 cd PEFT
+
+# 安装可视化所需的依赖包
+pip install -r requirements.txt
 
 # 运行调度脚本
 python peft_scheduler.py

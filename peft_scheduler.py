@@ -197,6 +197,76 @@ class PEFT:
         results.sort(key=lambda x: x["Start Time"])
         return results, makespan
 
+    def visualize_dag(self):
+        """
+        使用 NetworkX 和 Matplotlib 绘制任务依赖图 (DAG)
+        """
+        try:
+            import networkx as nx
+            import matplotlib.pyplot as plt
+        except ImportError:
+            print("[Warning] 请安装 networkx 和 matplotlib 以查看 DAG 图 (pip install networkx matplotlib)。")
+            return
+
+        G = nx.DiGraph()
+        for t_id, task in self.tasks.items():
+            G.add_node(t_id)
+            for succ_id, cost in task.successors.items():
+                G.add_edge(t_id, succ_id, weight=cost)
+        
+        pos = nx.spring_layout(G)
+        plt.figure(figsize=(8, 6))
+        
+        # 节点颜色基于优先级 rank_oct
+        ranks = [self.tasks[node].rank_oct for node in G.nodes()]
+        
+        nx.draw(G, pos, with_labels=True, node_color=ranks, cmap=plt.cm.Blues, 
+                node_size=2000, font_size=12, font_weight='bold', arrows=True)
+        
+        edge_labels = nx.get_edge_attributes(G, 'weight')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+        plt.title("DAG Dependency Visualization")
+        plt.show()
+
+    def visualize_gantt_chart(self, tasks_schedule, final_makespan):
+        """
+        使用 Matplotlib 绘制调度结果的甘特图
+        """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.colors as mcolors
+        except ImportError:
+            print("[Warning] 请安装 matplotlib 以查看甘特图 (pip install matplotlib)。")
+            return
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        colors = list(mcolors.TABLEAU_COLORS.values())
+        
+        proc_y = {p.proc_id: i for i, p in enumerate(self.processors)}
+        
+        for i, res in enumerate(tasks_schedule):
+            task_id = res['Task ID']
+            p_id = res['Assigned Processor']
+            start = res['Start Time']
+            end = res['End Time']
+            duration = end - start
+            
+            y = proc_y[p_id]
+            ax.barh(y, duration, left=start, height=0.4, align='center', 
+                    color=colors[i % len(colors)], edgecolor='black', alpha=0.8)
+            ax.text(start + duration / 2, y, task_id, ha='center', va='center', 
+                    color='white', fontweight='bold')
+        
+        ax.set_yticks(list(proc_y.values()))
+        ax.set_yticklabels(list(proc_y.keys()))
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Processor Nodes")
+        ax.set_title(f"PEFT Scheduling Gantt Chart (Makespan: {final_makespan:.2f})")
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+        
+        plt.tight_layout()
+        plt.show()
+
 
 # ============== 本地测试 / JSON 数据示例 ==============
 if __name__ == "__main__":
@@ -236,3 +306,7 @@ if __name__ == "__main__":
               f"Execution Window: [{res['Start Time']:>5.2f} - {res['End Time']:>5.2f}] | Priority(Rank): {res['Rank OCT']}")
     print("-" * 55)
     print(f"Total Makespan(Max AFT): {final_makespan:.2f}")
+
+    # ===== Visualization =====
+    scheduler.visualize_dag()
+    scheduler.visualize_gantt_chart(tasks_schedule, final_makespan)
