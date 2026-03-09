@@ -171,6 +171,72 @@ class PEFT:
             print(f"{task.task_id:<6} | {octs} | {task.rank_oct:>6.1f}")
         print("="*50 + "\n")
 
+    def calculate_cp_min_nodes(self) -> List[str]:
+        """
+        Calculate nodes on the Critical Path (CP_min) based on minimum computation costs and communication costs.
+        计算基于最小执行时间和通信开销的关键路径 (CP_min)
+        """
+        topo = self.topological_sort()
+        dp = {} # t_id -> (max_length, [path_nodes])
+        
+        for t_id in topo:
+            task = self.tasks[t_id]
+            node_min_w = min(task.comp_costs.values())
+            
+            if not task.predecessors:
+                dp[t_id] = (node_min_w, [t_id])
+            else:
+                max_len = 0
+                best_path = []
+                for pred_id, comm_cost in task.predecessors.items():
+                    pred_len, pred_path = dp[pred_id]
+                    # path length = previous path length + communication cost + node min computation
+                    path_len = pred_len + comm_cost + node_min_w
+                    if path_len > max_len:
+                        max_len = path_len
+                        best_path = pred_path + [t_id]
+                dp[t_id] = (max_len, best_path)
+                
+        # Find the exit node that has the maximum path length
+        exit_nodes = [t_id for t_id, t in self.tasks.items() if not t.successors]
+        global_max_len = 0
+        cp_nodes = []
+        for en in exit_nodes:
+            if dp[en][0] > global_max_len:
+                global_max_len = dp[en][0]
+                cp_nodes = dp[en][1]
+                
+        return cp_nodes
+
+    def print_performance_metrics(self, makespan: float):
+        """
+        Calculate and output Speedup and SLR (Schedule Length Ratio).
+        计算并输出加速比 (Speedup) 和 调度长度比 (SLR)
+        """
+        # 1. Speedup: The ratio of sequential execution time (on the fastest node) to the parallel makespan
+        seq_times = {p_id: sum(task.comp_costs[p_id] for task in self.tasks.values()) 
+                     for p_id in self.processor_ids}
+        min_seq_time = min(seq_times.values())
+        best_seq_proc = min(seq_times, key=seq_times.get)
+        speedup = min_seq_time / makespan
+        
+        # 2. SLR: The ratio of the makespan to the sum of min computation costs on the critical path (CP_min)
+        cp_nodes = self.calculate_cp_min_nodes()
+        cp_min_cost = sum(min(self.tasks[n].comp_costs.values()) for n in cp_nodes)
+        slr = makespan / cp_min_cost
+        
+        print("\n" + "="*50)
+        print(f"{'Performance Metrics (性能指标)':^50}")
+        print("="*50)
+        print(f"1. Minimum Sequential Time: {min_seq_time:.2f} (on Node {best_seq_proc})")
+        print(f"2. Parallel Makespan      : {makespan:.2f}")
+        print(f"-> Speedup ratio          : {speedup:.4f}")
+        print("-" * 50)
+        print(f"3. Critical Path Nodes    : {' -> '.join(cp_nodes)}")
+        print(f"4. CP_min Computation Cost: {cp_min_cost:.2f}")
+        print(f"-> SLR (Sch. Length Ratio): {slr:.4f}")
+        print("="*50 + "\n")
+
     def phase2_processor_selection(self):
         """
         Phase 2: Forward simulation, assign tasks sequentially to minimize O_EFT.
@@ -371,6 +437,9 @@ if __name__ == "__main__":
               f"Execution Window: [{res['Start Time']:>5.2f} - {res['End Time']:>5.2f}] | Priority(Rank): {res['Rank OCT']}")
     print("-" * 55)
     print(f"Total Makespan(Max AFT): {final_makespan:.2f}")
+
+    # ===== Metrics Calculation =====
+    scheduler.print_performance_metrics(final_makespan)
 
     # ===== Visualization =====
     scheduler.visualize_dag()
