@@ -102,25 +102,24 @@ class PEFT:
                 for p_k in self.processor_ids:
                     task.oct[p_k] = 0.0
             else:
-                # 其他节点逆向递归计算：
-                # OCT(t_i, p_k) = min_{p_w} [ max_{t_m in succ(t_i)} (OCT(t_m, p_w) + w_{m,w} + c_{i,m}) ]
+                # 其他节点逆向递归计算 (PEFT 规范公式: 先关于后继节点取 max，内部对不同计算节点取 min)
+                # OCT(t_i, p_k) = max_{t_m in succ(t_i)} [ min_{p_w} (OCT(t_m, p_w) + w_{m,w} + c_{i,m}) ]
                 for p_k in self.processor_ids:
-                    min_val = float('inf')
-                    for p_w in self.processor_ids: # p_w 后继节点的执行处理器
-                        max_val = 0.0
-                        for succ_id, comm_cost in task.successors.items():
-                            succ_task = self.tasks[succ_id]
+                    max_val = 0.0
+                    for succ_id, comm_cost in task.successors.items():
+                        succ_task = self.tasks[succ_id]
+                        min_pw_val = float('inf')
+                        for p_w in self.processor_ids: # 为每个后继节点寻找独立的最优后续跳步 p_w
                             # 数据跨节点传输需考虑通信开销，若是同一节点则设0 (关键路径预判逻辑中的通信消减)
                             actual_comm_cost = comm_cost if p_k != p_w else 0.0
-                            
                             val = succ_task.oct[p_w] + succ_task.comp_costs[p_w] + actual_comm_cost
-                            if val > max_val:
-                                max_val = val
+                            if val < min_pw_val:
+                                min_pw_val = val
                         
-                        if max_val < min_val:
-                            min_val = max_val
+                        if min_pw_val > max_val:
+                            max_val = min_pw_val
                     
-                    task.oct[p_k] = min_val
+                    task.oct[p_k] = max_val
 
         # 计算优先级 rank_oct = 平均值
         P = len(self.processor_ids)
@@ -129,6 +128,23 @@ class PEFT:
 
         # 按照 rank_oct 降序排列得到调度顺序
         self.scheduling_order = sorted(list(self.tasks.values()), key=lambda t: t.rank_oct, reverse=True)
+
+    def print_oct_table(self):
+        """
+        输出完整的 OCT 矩阵及 rank_oct
+        """
+        print("\n" + "="*50)
+        print(f"{'OCT Table (Optimistic Cost Table)':^50}")
+        print("="*50)
+        header = f"{'Task':<6} | " + " | ".join([f"{p:>6}" for p in self.processor_ids]) + " | rank_oct"
+        print(header)
+        print("-" * 50)
+        # 按照 Task 数字身份排序输出
+        sorted_tasks = sorted(self.tasks.values(), key=lambda t: int(t.task_id.replace('T', '')))
+        for task in sorted_tasks:
+            octs = " | ".join([f"{task.oct[p]:>6.1f}" for p in self.processor_ids])
+            print(f"{task.task_id:<6} | {octs} | {task.rank_oct:>6.1f}")
+        print("="*50 + "\n")
 
     def phase2_processor_selection(self):
         """
@@ -179,6 +195,7 @@ class PEFT:
         运行整体算法，返回所有任务的执行记录和整体的 Makespan
         """
         self.phase1_task_prioritizing()
+        self.print_oct_table()  # 输出 OCT 以供对照
         self.phase2_processor_selection()
 
         # Final Makespan = max { AFT(n_exit) }
