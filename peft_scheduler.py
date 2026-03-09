@@ -297,8 +297,8 @@ if __name__ == "__main__":
             "T5": {"comp_costs": {"P1": 29, "P2": 27, "P3": 35}, "dependencies": {"T1": 13}},
             "T6": {"comp_costs": {"P1": 26, "P2": 17, "P3": 24}, "dependencies": {"T1": 7}},
             "T7": {"comp_costs": {"P1": 14, "P2": 25, "P3": 30}, "dependencies": {"T3": 16}},
-            "T8": {"comp_costs": {"P1": 29, "P2": 23, "P3": 36}, "dependencies": {"T2": 3, "T4": 11}},
-            "T9": {"comp_costs": {"P1": 15, "P2": 21, "P3": 8},  "dependencies": {"T2": 30, "T4": 7, "T5": 57, "T6": 5}},
+            "T8": {"comp_costs": {"P1": 29, "P2": 23, "P3": 36}, "dependencies": {"T2": 3, "T4": 11, "T6": 5}},
+            "T9": {"comp_costs": {"P1": 15, "P2": 21, "P3": 8},  "dependencies": {"T2": 30, "T4": 7, "T5": 57}},
             "T10": {"comp_costs": {"P1": 13, "P2": 16, "P3": 33}, "dependencies": {"T7": 9, "T8": 42, "T9": 7}}
         }
     }
