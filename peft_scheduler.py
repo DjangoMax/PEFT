@@ -362,7 +362,7 @@ class PEFT:
         nx.draw_networkx_edge_labels(G, pos_top_down, edge_labels=edge_labels, label_pos=0.3, font_size=10)
         
         plt.title("DAG Dependency Visualization (Hierarchical Layout)")
-        plt.show()
+        plt.show(block=False)  # <-- Changed to non-blocking so the Gantt chart opens at the same time
 
     def visualize_gantt_chart(self, tasks_schedule, final_makespan):
         """
