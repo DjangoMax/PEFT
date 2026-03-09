@@ -274,22 +274,16 @@ if __name__ == "__main__":
     sample_dag_json = {
         "processors": ["P1", "P2", "P3"],
         "tasks": {
-            "T1": {
-                "comp_costs": {"P1": 14, "P2": 16, "P3": 9},
-                "dependencies": {}
-            },
-            "T2": {
-                "comp_costs": {"P1": 13, "P2": 19, "P3": 18},
-                "dependencies": {"T1": 18}
-            },
-            "T3": {
-                "comp_costs": {"P1": 11, "P2": 13, "P3": 19},
-                "dependencies": {"T1": 12}
-            },
-            "T4": {
-                "comp_costs": {"P1": 13, "P2": 8, "P3": 17},
-                "dependencies": {"T2": 27, "T3": 31}
-            }
+            "T1": {"comp_costs": {"P1": 22, "P2": 21, "P3": 36}, "dependencies": {}},
+            "T2": {"comp_costs": {"P1": 22, "P2": 18, "P3": 18}, "dependencies": {"T1": 17}},
+            "T3": {"comp_costs": {"P1": 32, "P2": 27, "P3": 43}, "dependencies": {"T1": 31}},
+            "T4": {"comp_costs": {"P1": 7,  "P2": 10, "P3": 4},  "dependencies": {"T1": 29}},
+            "T5": {"comp_costs": {"P1": 29, "P2": 27, "P3": 35}, "dependencies": {"T1": 13}},
+            "T6": {"comp_costs": {"P1": 26, "P2": 17, "P3": 24}, "dependencies": {"T1": 7}},
+            "T7": {"comp_costs": {"P1": 14, "P2": 25, "P3": 30}, "dependencies": {"T3": 16}},
+            "T8": {"comp_costs": {"P1": 29, "P2": 23, "P3": 36}, "dependencies": {"T2": 30, "T4": 11}},
+            "T9": {"comp_costs": {"P1": 15, "P2": 21, "P3": 8},  "dependencies": {"T2": 3, "T4": 7, "T5": 57, "T6": 5}},
+            "T10": {"comp_costs": {"P1": 13, "P2": 16, "P3": 33}, "dependencies": {"T7": 9, "T8": 42, "T9": 7}}
         }
     }
 
